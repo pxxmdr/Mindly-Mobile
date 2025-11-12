@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../App";
 import { SafeAreaView } from "react-native-safe-area-context";
+import NavBarPatient from "../components/NavBarPatient";
 
 const PRIMARY = "#5ED3C6";
 
@@ -98,7 +99,11 @@ export default function EmotionGuideScreen() {
           color="#BA68C8"
           screenName="MedoDetails"
         />
+
+        <View style={{ height: 110 }} />
       </ScrollView>
+
+      <NavBarPatient active="guide" />
     </SafeAreaView>
   );
 }

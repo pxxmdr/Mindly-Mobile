@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -50,7 +51,6 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-
       await registerPaciente({
         nome: nome.trim(),
         email: email.trim(),
@@ -65,9 +65,17 @@ export default function RegisterScreen() {
       navigation.navigate("Login");
     } catch (e: any) {
       console.log("[MINDLY][REGISTER] ERRO:", e);
-      const msg =
+
+      const backendMsg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
         e?.message ||
+        null;
+
+      const msg =
+        backendMsg ||
         "Não foi possível concluir o cadastro. Tente novamente mais tarde.";
+
       setErro(msg);
       Alert.alert("Erro no cadastro", msg);
     } finally {
@@ -77,68 +85,78 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>Mindly</Text>
-      <Text style={styles.title}>Criar conta</Text>
-      <Text style={styles.subtitle}>
-        Comece a registrar suas emoções de forma simples e segura.
-      </Text>
+      {/* LOGO FIXA NO TOPO */}
+      <View style={styles.logoWrapper}>
+        <Image
+          source={require("../../assets/MindlyLogo.png")}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
+      </View>
 
-      <TextInput
-        placeholder="Nome completo"
-        placeholderTextColor="#9E9E9E"
-        style={styles.input}
-        value={nome}
-        onChangeText={setNome}
-        autoCapitalize="words"
-      />
-
-      <TextInput
-        placeholder="Telefone"
-        placeholderTextColor="#9E9E9E"
-        style={styles.input}
-        value={telefone}
-        onChangeText={(text) => setTelefone(formatTelefone(text))}
-        keyboardType="phone-pad"
-      />
-
-      <TextInput
-        placeholder="E-mail"
-        placeholderTextColor="#9E9E9E"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        placeholder="Senha (mínimo 6 caracteres)"
-        placeholderTextColor="#9E9E9E"
-        style={styles.input}
-        secureTextEntry
-        value={senha}
-        onChangeText={setSenha}
-      />
-
-      {erro ? <Text style={styles.error}>{erro}</Text> : null}
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={loading ? undefined : handleRegister}
-        activeOpacity={0.85}
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.buttonText}>Cadastrar</Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.registerText}>
-          Já tem conta? <Text style={styles.registerLink}>Entrar</Text>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Criar conta</Text>
+        <Text style={styles.subtitle}>
+          Comece a registrar suas emoções de forma simples e segura.
         </Text>
-      </TouchableOpacity>
+
+        <TextInput
+          placeholder="Nome completo"
+          placeholderTextColor="#9E9E9E"
+          style={styles.input}
+          value={nome}
+          onChangeText={setNome}
+          autoCapitalize="words"
+        />
+
+        <TextInput
+          placeholder="Telefone"
+          placeholderTextColor="#9E9E9E"
+          style={styles.input}
+          value={telefone}
+          onChangeText={(text) => setTelefone(formatTelefone(text))}
+          keyboardType="phone-pad"
+        />
+
+        <TextInput
+          placeholder="E-mail"
+          placeholderTextColor="#9E9E9E"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          placeholder="Senha (mínimo 6 caracteres)"
+          placeholderTextColor="#9E9E9E"
+          style={styles.input}
+          secureTextEntry
+          value={senha}
+          onChangeText={setSenha}
+        />
+
+        {erro ? <Text style={styles.error}>{erro}</Text> : null}
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={loading ? undefined : handleRegister}
+          activeOpacity={0.85}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Cadastrar</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.registerText}>
+            Já tem conta? <Text style={styles.registerLink}>Entrar</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -147,15 +165,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 24,
     justifyContent: "center",
+    alignItems: "center",
   },
-  logo: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: PRIMARY,
-    textAlign: "center",
-    marginBottom: 4,
+  logoWrapper: {
+    position: "absolute",
+    top: 110,
+    alignSelf: "center",
+    pointerEvents: "none",
+  },
+  logoImg: {
+    width: 200,
+    height: 200,
+    marginBottom: -16,
+  },
+  formContainer: {
+    width: "85%",
   },
   title: {
     fontSize: 20,

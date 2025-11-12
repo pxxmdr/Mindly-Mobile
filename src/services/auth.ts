@@ -1,8 +1,16 @@
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://10.0.2.2:8080/api",
+  timeout: 8000,
+});
+
 export type Paciente = {
   id: number;
   nome: string;
   email: string;
   telefone: string;
+  observacao?: string | null;
 };
 
 type RegisterPayload = {
@@ -18,23 +26,11 @@ type LoginPayload = {
 };
 
 export async function registerPaciente(data: RegisterPayload): Promise<Paciente> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
-  return {
-    id: Date.now(),
-    nome: data.nome,
-    email: data.email,
-    telefone: data.telefone,
-  };
+  const res = await api.post<Paciente>("/auth/register", data);
+  return res.data;
 }
 
-export async function loginPaciente({ email }: LoginPayload): Promise<Paciente> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
-  return {
-    id: 1,
-    nome: 'Paciente Mindly',
-    email,
-    telefone: '(11) 99999-9999',
-  };
+export async function loginPaciente(data: LoginPayload): Promise<Paciente> {
+  const res = await api.post<Paciente>("/auth/login", data);
+  return res.data;
 }
