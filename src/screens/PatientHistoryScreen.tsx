@@ -6,55 +6,76 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRoute, RouteProp } from "@react-navigation/native";
-import { RootStackParamList, Registro } from "../../App";
+import { useRoute } from "@react-navigation/native";
 import NavBarPatient from "../components/NavBarPatient";
+import {
+  RegistroDiario,
+  listarRegistros,
+  deletarRegistro,
+} from "../services/registros";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const PRIMARY = "#5ED3C6";
-
-type HistoryRouteProp = RouteProp<RootStackParamList, "PatientHistory">;
-
-const registrosMock: Registro[] = [
-  {
-    id: 1,
-    data: "2025-11-10",
-    mood: "😊 Feliz / leve",
-    descricao: "Dia leve, consegui concluir tudo no trabalho e descansar.",
-    nivelEstresse: 2,
-    qualidadeSono: 4,
-    atividadeFisica: true,
-    motivoGratidao: "Consegui entregar meus objetivos.",
-  },
-  {
-    id: 2,
-    data: "2025-11-09",
-    mood: "😴 Cansado(a)",
-    descricao: "Muito cansado, dormi mal e estava sem foco hoje.",
-    nivelEstresse: 4,
-    qualidadeSono: 2,
-    atividadeFisica: false,
-    motivoGratidao: "",
-  },
-];
 
 function accentMint() {
   return "#EAF9F6";
 }
 
 export default function PatientHistoryScreen({ navigation }: any) {
-  const route = useRoute<HistoryRouteProp>();
-  const [records, setRecords] = useState<Registro[]>(registrosMock);
+  const route = useRoute<any>();
+  const [records, setRecords] = useState<RegistroDiario[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [paciente, setPaciente] = useState<any | null>(null);
+
+  // 🔹 Carrega o paciente logado do AsyncStorage
+  useEffect(() => {
+    const carregarPaciente = async () => {
+      try {
+        const salvo = await AsyncStorage.getItem("pacienteLogado");
+        if (salvo) {
+          const parsed = JSON.parse(salvo);
+          console.log("[MINDLY][HISTORY] Paciente carregado:", parsed);
+          setPaciente(parsed);
+        } else {
+          console.log(
+            "[MINDLY][HISTORY] Nenhum paciente encontrado no AsyncStorage"
+          );
+        }
+      } catch (e) {
+        console.log("[MINDLY][HISTORY] ERRO AO LER ASYNC:", e);
+      }
+    };
+
+    carregarPaciente();
+  }, []);
+
+  const carregarRegistros = async (email: string) => {
+    try {
+      setLoading(true);
+      console.log("[MINDLY][HISTORY] Buscando registros para:", email);
+      const lista = await listarRegistros(email);
+      console.log("[MINDLY][HISTORY] Registros retornados:", lista.length);
+      setRecords(lista);
+    } catch (e: any) {
+      console.log("[MINDLY][HISTORY] ERRO:", e);
+      const msg =
+        e?.message ||
+        "Não foi possível carregar os registros. Tente novamente mais tarde.";
+      Alert.alert("Erro ao carregar histórico", msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const novo = route.params?.newRecord as Registro | undefined;
-    if (novo) {
-      setRecords((prev) =>
-        prev.some((r) => r.id === novo.id) ? prev : [novo, ...prev]
-      );
+    if (paciente?.email) {
+      carregarRegistros(paciente.email);
     }
-  }, [route.params]);
+  }, [paciente, route.params?.reloadKey]);
 
   const handleDelete = (id: number) => {
     Alert.alert("Excluir registro", "Deseja realmente excluir este dia?", [
@@ -62,7 +83,17 @@ export default function PatientHistoryScreen({ navigation }: any) {
       {
         text: "Excluir",
         style: "destructive",
-        onPress: () => setRecords((prev) => prev.filter((r) => r.id !== id)),
+        onPress: async () => {
+          try {
+            await deletarRegistro(id);
+            setRecords((prev) => prev.filter((r) => r.id !== id));
+          } catch (e: any) {
+            console.log("[MINDLY][DELETE] ERRO:", e);
+            const msg =
+              e?.message || "Não foi possível excluir o registro agora.";
+            Alert.alert("Erro ao excluir", msg);
+          }
+        },
       },
     ]);
   };
@@ -81,7 +112,16 @@ export default function PatientHistoryScreen({ navigation }: any) {
           </Text>
         </View>
 
-        {records.length === 0 && (
+        {loading && (
+          <View style={{ marginTop: 16, alignItems: "center" }}>
+            <ActivityIndicator size="small" color={PRIMARY} />
+            <Text style={{ marginTop: 8, color: "#777" }}>
+              Carregando registros...
+            </Text>
+          </View>
+        )}
+
+        {!loading && records.length === 0 && (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyEmoji}>📭</Text>
             <Text style={styles.emptyTitle}>Sem registros por aqui</Text>
@@ -98,74 +138,83 @@ export default function PatientHistoryScreen({ navigation }: any) {
           </View>
         )}
 
-        {records.map((item) => {
-          const [emoji, ...rest] = item.mood.split(" ");
-          const moodLabel = rest.join(" ");
-          return (
-            <View
-              key={item.id}
-              style={[styles.cardWrapper, { backgroundColor: accentMint() }]}
-            >
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.date}>
-                    {new Date(item.data).toLocaleDateString("pt-BR")}
-                  </Text>
-
-                  <View style={styles.moodChip}>
-                    <Text style={styles.moodEmoji}>{emoji || item.mood}</Text>
-                    {!!moodLabel && (
-                      <Text style={styles.moodText}>{moodLabel}</Text>
-                    )}
-                  </View>
-                </View>
-
-                <Text style={styles.description}>{item.descricao}</Text>
-
-                <View style={styles.statsRow}>
-                  <View style={styles.statPill}>
-                    <Text style={styles.statLabel}>Estresse</Text>
-                    <Text style={styles.statValue}>{item.nivelEstresse}/5</Text>
-                  </View>
-                  <View style={styles.statPill}>
-                    <Text style={styles.statLabel}>Sono</Text>
-                    <Text style={styles.statValue}>{item.qualidadeSono}/5</Text>
-                  </View>
-                  <View style={styles.statPill}>
-                    <Text style={styles.statLabel}>Atividade</Text>
-                    <Text style={styles.statValue}>
-                      {item.atividadeFisica ? "Sim" : "Não"}
+        {!loading &&
+          records.map((item) => {
+            const [emoji, ...rest] = (item.moodDoDia || "").split(" ");
+            const moodLabel = rest.join(" ");
+            return (
+              <View
+                key={item.id}
+                style={[styles.cardWrapper, { backgroundColor: accentMint() }]}
+              >
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.date}>
+                      {new Date(item.dataRegistro).toLocaleDateString("pt-BR")}
                     </Text>
+
+                    <View style={styles.moodChip}>
+                      <Text style={styles.moodEmoji}>{emoji || "🙂"}</Text>
+                      {!!moodLabel && (
+                        <Text style={styles.moodText}>{moodLabel}</Text>
+                      )}
+                    </View>
                   </View>
-                </View>
 
-                {item.motivoGratidao ? (
-                  <View style={styles.gratidaoBox}>
-                    <Text style={styles.gratidaoIcon}>✨</Text>
-                    <Text style={styles.gratidaoText}>
-                      {item.motivoGratidao}
-                    </Text>
+                  <Text style={styles.description}>{item.descricaoDia}</Text>
+
+                  <View style={styles.statsRow}>
+                    <View style={styles.statPill}>
+                      <Text style={styles.statLabel}>Estresse</Text>
+                      <Text style={styles.statValue}>
+                        {item.nivelEstresse ?? 0}/5
+                      </Text>
+                    </View>
+                    <View style={styles.statPill}>
+                      <Text style={styles.statLabel}>Sono</Text>
+                      <Text style={styles.statValue}>
+                        {item.qualidadeSono ?? 0}/5
+                      </Text>
+                    </View>
+                    <View style={styles.statPill}>
+                      <Text style={styles.statLabel}>Atividade</Text>
+                      <Text style={styles.statValue}>
+                        {item.atividadeFisica ? "Sim" : "Não"}
+                      </Text>
+                    </View>
                   </View>
-                ) : null}
 
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => navigation.navigate("PatientForm")}
-                  >
-                    <Text style={styles.editText}>Editar</Text>
-                  </TouchableOpacity>
+                  {item.motivoGratidao ? (
+                    <View style={styles.gratidaoBox}>
+                      <Text style={styles.gratidaoIcon}>✨</Text>
+                      <Text style={styles.gratidaoText}>
+                        {item.motivoGratidao}
+                      </Text>
+                    </View>
+                  ) : null}
 
-                  <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                    <Text style={styles.deleteText}>Excluir</Text>
-                  </TouchableOpacity>
+                  <View style={styles.actions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() =>
+                        navigation.navigate("PatientForm", {
+                          registro: item, // << aqui!
+                        })
+                      }
+                    >
+                      <Text style={styles.editText}>Editar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                      <Text style={styles.deleteText}>Excluir</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
 
-        {records.length > 0 && (
+        {!loading && records.length > 0 && (
           <TouchableOpacity
             style={[styles.addButton, { marginTop: 14 }]}
             onPress={() => navigation.navigate("PatientForm")}
@@ -192,7 +241,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-
   hero: { alignItems: "center", paddingTop: 4, paddingBottom: 8 },
   heroBadge: {
     backgroundColor: "#EAF9F6",
@@ -223,7 +271,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subtitle: { fontSize: 13, color: "#777", textAlign: "center", marginTop: 6 },
-
   emptyBox: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -236,7 +283,6 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 28, marginBottom: 6 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: "#333" },
   emptyText: { fontSize: 13, color: "#777", textAlign: "center", marginTop: 4 },
-
   cardWrapper: {
     borderRadius: 14,
     padding: 4,
@@ -265,7 +311,6 @@ const styles = StyleSheet.create({
     color: "#555",
     fontWeight: "700",
   },
-
   moodChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -278,14 +323,12 @@ const styles = StyleSheet.create({
   },
   moodEmoji: { fontSize: 16, marginRight: 6 },
   moodText: { fontSize: 12, color: "#333", fontWeight: "700" },
-
   description: {
     color: "#333",
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 10,
   },
-
   statsRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
   statPill: {
     flex: 1,
@@ -298,7 +341,6 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 11, color: "#777" },
   statValue: { fontSize: 14, fontWeight: "700", color: "#333" },
-
   gratidaoBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -311,12 +353,10 @@ const styles = StyleSheet.create({
   },
   gratidaoIcon: { fontSize: 14, marginRight: 6 },
   gratidaoText: { flex: 1, fontSize: 13, color: "#333" },
-
   actions: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
   editButton: { marginRight: 14 },
   editText: { color: PRIMARY, fontWeight: "700" },
   deleteText: { color: "#E53935", fontWeight: "700" },
-
   addButton: {
     backgroundColor: PRIMARY,
     borderRadius: 12,

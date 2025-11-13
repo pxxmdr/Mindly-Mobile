@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
 import { loginPaciente } from "../services/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const PRIMARY = "#5ED3C6";
 
@@ -46,6 +47,9 @@ export default function LoginScreen() {
       setLoading(true);
       const paciente = await loginPaciente({ email, senha });
       console.log("[MINDLY][LOGIN] OK ->", paciente);
+
+      // 🔵 SALVA O PACIENTE NO ASYNC STORAGE
+      await AsyncStorage.setItem("pacienteLogado", JSON.stringify(paciente));
 
       const isAdmin = email.toLowerCase() === "admin@mindly.com";
       const nextScreen = isAdmin ? "EmotionGuide" : "PatientForm";
@@ -144,7 +148,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 145,
     alignSelf: "center",
-    pointerEvents: "none",
   },
   logoImg: {
     width: 200,

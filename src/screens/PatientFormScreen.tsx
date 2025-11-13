@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import NavBarPatient from "../components/NavBarPatient";
+import { criarRegistro, atualizarRegistro } from "../services/registros";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRoute } from "@react-navigation/native";
 
 const PRIMARY = "#5ED3C6";
 
 export default function PatientFormScreen({ navigation }: any) {
+  const route = useRoute<any>();
+
+  const registroEdicao = route.params?.registro;
+
   const [data, setData] = useState("");
   const [descricaoDia, setDescricaoDia] = useState("");
   const [moodDia, setMoodDia] = useState("");
@@ -27,7 +34,75 @@ export default function PatientFormScreen({ navigation }: any) {
   const [showStressOptions, setShowStressOptions] = useState(false);
   const [showSleepOptions, setShowSleepOptions] = useState(false);
 
-  const handleSubmit = () => {
+  const [loading, setLoading] = useState(false);
+
+  const [paciente, setPaciente] = useState<any | null>(null);
+
+  const isEditing = !!registroEdicao;
+  const registroId = registroEdicao?.id;
+
+  useEffect(() => {
+    const carregarPaciente = async () => {
+      try {
+        const salvo = await AsyncStorage.getItem("pacienteLogado");
+        if (salvo) {
+          const parsed = JSON.parse(salvo);
+          console.log("[MINDLY][FORM] Paciente carregado:", parsed);
+          setPaciente(parsed);
+        } else {
+          console.log(
+            "[MINDLY][FORM] Nenhum paciente encontrado no AsyncStorage"
+          );
+        }
+      } catch (e) {
+        console.log("[MINDLY][FORM] ERRO AO LER ASYNC:", e);
+      }
+    };
+
+    carregarPaciente();
+  }, []);
+
+  useEffect(() => {
+    if (!registroEdicao) return;
+
+    try {
+      const d = new Date(registroEdicao.dataRegistro);
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const dataFormatada = `${dd}/${mm}/${yyyy}`;
+
+      setData(dataFormatada);
+      setDescricaoDia(registroEdicao.descricaoDia || "");
+      setMoodDia(registroEdicao.moodDoDia || "");
+      setNivelEstresse(
+        registroEdicao.nivelEstresse != null
+          ? String(registroEdicao.nivelEstresse)
+          : ""
+      );
+      setQualidadeSono(
+        registroEdicao.qualidadeSono != null
+          ? String(registroEdicao.qualidadeSono)
+          : ""
+      );
+      setAtividadeFisica(!!registroEdicao.atividadeFisica);
+      setMotivoGratidao(registroEdicao.motivoGratidao || "");
+    } catch (e) {
+      console.log("[MINDLY][FORM] ERRO AO POPULAR CAMPOS DE EDIÇÃO:", e);
+    }
+  }, [registroEdicao]);
+
+  const emailPaciente = paciente?.email;
+
+  const handleSubmit = async () => {
+    if (!emailPaciente) {
+      Alert.alert(
+        "Erro",
+        "Não foi possível identificar o paciente logado. Faça login novamente."
+      );
+      return;
+    }
+
     if (!data || data.length !== 10) {
       Alert.alert("Data inválida", "Informe a data no formato dd/mm/aaaa.");
       return;
@@ -43,19 +118,50 @@ export default function PatientFormScreen({ navigation }: any) {
     const [dd, mm, yyyy] = data.split("/");
     const dataISO = `${yyyy}-${mm}-${dd}`;
 
-    const novoRegistro = {
-      id: Date.now(),
-      data: dataISO,
-      mood: moodDia,
-      descricao: descricaoDia.trim(),
-      nivelEstresse: Number(nivelEstresse) || 0,
-      qualidadeSono: Number(qualidadeSono) || 0,
-      atividadeFisica,
-      motivoGratidao: motivoGratidao.trim(),
-    };
+    try {
+      setLoading(true);
 
-    Alert.alert("Registro salvo 🩵", "Seu dia foi registrado com sucesso!");
-    navigation.navigate("PatientHistory", { newRecord: novoRegistro });
+      if (isEditing && registroId) {
+
+        await atualizarRegistro(registroId, {
+          emailPaciente,
+          dataRegistro: dataISO,
+          descricaoDia: descricaoDia.trim(),
+          moodDoDia: moodDia,
+          nivelEstresse: Number(nivelEstresse) || 0,
+          qualidadeSono: Number(qualidadeSono) || 0,
+          atividadeFisica,
+          motivoGratidao: motivoGratidao.trim() || null,
+        });
+
+        Alert.alert("Registro atualizado 🩵", "Seu dia foi atualizado!");
+
+      } else {
+        await criarRegistro({
+          emailPaciente,
+          dataRegistro: dataISO,
+          descricaoDia: descricaoDia.trim(),
+          moodDoDia: moodDia,
+          nivelEstresse: Number(nivelEstresse) || 0,
+          qualidadeSono: Number(qualidadeSono) || 0,
+          atividadeFisica,
+          motivoGratidao: motivoGratidao.trim() || null,
+        });
+
+        Alert.alert("Registro salvo 🩵", "Seu dia foi registrado com sucesso!");
+      }
+
+      
+      navigation.navigate("PatientHistory", { reloadKey: Date.now() });
+    } catch (e: any) {
+      console.log("[MINDLY][FORM] ERRO:", e);
+      const msg =
+        e?.message ||
+        "Não foi possível salvar seu registro. Tente novamente mais tarde.";
+      Alert.alert("Erro ao salvar", msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +173,9 @@ export default function PatientFormScreen({ navigation }: any) {
             <Text style={styles.heroBadgeText}>Diário do paciente</Text>
           </View>
           <Text style={styles.logo}>Mindly</Text>
-          <Text style={styles.title}>Como foi seu dia?</Text>
+          <Text style={styles.title}>
+            {isEditing ? "Editar registro do dia" : "Como foi seu dia?"}
+          </Text>
           <Text style={styles.subtitle}>
             Compartilhe um pouco sobre como você se sentiu hoje — seu bem-estar
             importa pra gente 💭
@@ -286,10 +394,16 @@ export default function PatientFormScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={handleSubmit}
+          onPress={loading ? undefined : handleSubmit}
           activeOpacity={0.9}
         >
-          <Text style={styles.buttonText}>Registrar meu dia</Text>
+          <Text style={styles.buttonText}>
+            {loading
+              ? "Salvando..."
+              : isEditing
+              ? "Atualizar registro"
+              : "Registrar meu dia"}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 110 }} />
@@ -344,7 +458,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 6,
   },
-
   section: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -365,7 +478,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { flex: 1, color: "#1E2225", fontSize: 15, fontWeight: "700" },
   sectionIcon: { fontSize: 16, opacity: 0.9 },
-
   label: {
     fontSize: 13,
     fontWeight: "700",
@@ -384,7 +496,6 @@ const styles = StyleSheet.create({
     borderColor: "#E3EAED",
   },
   textArea: { height: 96, textAlignVertical: "top" },
-
   select: {
     backgroundColor: "#F5F8F9",
     borderRadius: 10,
@@ -417,7 +528,6 @@ const styles = StyleSheet.create({
   },
   optionEmoji: { fontSize: 16, marginRight: 8 },
   optionLabel: { fontSize: 14, color: "#2E3235" },
-
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -426,7 +536,6 @@ const styles = StyleSheet.create({
   },
   labelSwitch: { fontSize: 13, fontWeight: "700", color: "#2E3235" },
   helperText: { fontSize: 12, color: "#7C868B", marginTop: 2 },
-
   button: {
     backgroundColor: PRIMARY,
     borderRadius: 12,
