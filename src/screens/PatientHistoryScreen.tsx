@@ -17,6 +17,7 @@ import {
   deletarRegistro,
 } from "../services/registros";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { buscarPacientePorEmail } from "../services/pacientes";
 
 const PRIMARY = "#5ED3C6";
 
@@ -30,8 +31,10 @@ export default function PatientHistoryScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const [paciente, setPaciente] = useState<any | null>(null);
+  const [feedbackPsicologo, setFeedbackPsicologo] = useState<string | null>(
+    null
+  );
 
-  // 🔹 Carrega o paciente logado do AsyncStorage
   useEffect(() => {
     const carregarPaciente = async () => {
       try {
@@ -57,9 +60,15 @@ export default function PatientHistoryScreen({ navigation }: any) {
     try {
       setLoading(true);
       console.log("[MINDLY][HISTORY] Buscando registros para:", email);
-      const lista = await listarRegistros(email);
+
+      const [lista, pacienteInfo] = await Promise.all([
+        listarRegistros(email),
+        buscarPacientePorEmail(email),
+      ]);
+
       console.log("[MINDLY][HISTORY] Registros retornados:", lista.length);
       setRecords(lista);
+      setFeedbackPsicologo(pacienteInfo.observacao ?? null);
     } catch (e: any) {
       console.log("[MINDLY][HISTORY] ERRO:", e);
       const msg =
@@ -198,7 +207,7 @@ export default function PatientHistoryScreen({ navigation }: any) {
                       style={styles.editButton}
                       onPress={() =>
                         navigation.navigate("PatientForm", {
-                          registro: item, // << aqui!
+                          registro: item,
                         })
                       }
                     >
@@ -214,6 +223,7 @@ export default function PatientHistoryScreen({ navigation }: any) {
             );
           })}
 
+        {}
         {!loading && records.length > 0 && (
           <TouchableOpacity
             style={[styles.addButton, { marginTop: 14 }]}
@@ -222,6 +232,14 @@ export default function PatientHistoryScreen({ navigation }: any) {
           >
             <Text style={styles.addButtonText}>Adicionar novo dia</Text>
           </TouchableOpacity>
+        )}
+
+        {}
+        {feedbackPsicologo && (
+          <View style={styles.feedbackBox}>
+            <Text style={styles.feedbackTitle}>Feedback do psicólogo</Text>
+            <Text style={styles.feedbackText}>{feedbackPsicologo}</Text>
+          </View>
         )}
 
         <View style={{ height: 110 }} />
@@ -373,5 +391,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.3,
+  },
+
+  feedbackBox: {
+    marginTop: 18,
+    backgroundColor: "#F7F9FA",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E3EAED",
+    padding: 14,
+  },
+  feedbackTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 6,
+  },
+  feedbackText: {
+    fontSize: 13,
+    color: "#555",
+    lineHeight: 19,
   },
 });

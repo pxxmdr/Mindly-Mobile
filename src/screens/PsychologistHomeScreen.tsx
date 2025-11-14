@@ -13,7 +13,17 @@ import NavBarPsychologistHome from "../components/NavBarPsychologistHome";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 
-import { listarPacientes, type Paciente } from "../services/pacientes";
+import {
+  listarPacientes,
+  type Paciente,
+} from "../services/pacientes";
+
+import {
+  listarAlertas,
+  type AlertaRegistro,
+} from "../services/registros";
+
+import Foundation from "@expo/vector-icons/Foundation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PsychologistHome">;
 
@@ -23,14 +33,25 @@ const TEXT_DARK = "#1A1A1A";
 export default function PsychologistHomeScreen({ navigation }: Props) {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapAlertas, setMapAlertas] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await listarPacientes();
-        setPacientes(data);
+        const [pacientesData, alertasData] = await Promise.all([
+          listarPacientes(),
+          listarAlertas(),
+        ]);
+
+        setPacientes(pacientesData);
+
+        const map: Record<number, boolean> = {};
+        alertasData.forEach((alerta: AlertaRegistro) => {
+          map[alerta.pacienteId] = true;
+        });
+        setMapAlertas(map);
       } catch (e) {
-        console.error("[MINDLY][PSI HOME] erro ao listar pacientes:", e);
+        console.error("[MINDLY][PSI HOME] erro ao listar pacientes/alertas:", e);
       } finally {
         setLoading(false);
       }
@@ -72,30 +93,46 @@ export default function PsychologistHomeScreen({ navigation }: Props) {
                 Nenhum paciente encontrado.
               </Text>
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => abrirDetalhes(item)}
-              >
-                {/* Avatar */}
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>
-                    {item.nome.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+            renderItem={({ item }) => {
+              const temAlerta = !!mapAlertas[item.id];
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.patientName}>{item.nome}</Text>
+              return (
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => abrirDetalhes(item)}
+                >
+                  {}
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>
+                      {item.nome.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
 
-                  {/* NOVO - Telefone */}
-                  <Text style={styles.patientPhone}>📞 {item.telefone}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.patientName}>{item.nome}</Text>
 
-                  <Text style={styles.patientEmail}>{item.email}</Text>
+                      {temAlerta && (
+                        <View style={styles.alertBadge}>
+                          <Foundation
+                            name="alert"
+                            size={18}
+                            color="#E53935"
+                          />
+                          <Text style={styles.alertText}>atenção</Text>
+                        </View>
+                      )}
+                    </View>
 
-                  <Text style={styles.cardHint}>Ver diário emocional →</Text>
-                </View>
-              </TouchableOpacity>
-            )}
+                    <Text style={styles.patientPhone}>📞 {item.telefone}</Text>
+
+                    <Text style={styles.patientEmail}>{item.email}</Text>
+
+                    <Text style={styles.cardHint}>Ver diário emocional →</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
           />
         )}
       </View>
@@ -187,6 +224,12 @@ const styles = StyleSheet.create({
     color: PRIMARY,
   },
 
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
   patientName: {
     fontSize: 17,
     fontWeight: "600",
@@ -208,5 +251,21 @@ const styles = StyleSheet.create({
     color: "#555",
     marginTop: 2,
     marginBottom: 2,
+  },
+
+  alertBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FDECEC",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  alertText: {
+    fontSize: 11,
+    color: "#C62828",
+    marginLeft: 4,
+    fontWeight: "700",
   },
 });

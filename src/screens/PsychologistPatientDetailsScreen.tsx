@@ -14,6 +14,10 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 
 import { listarRegistros, type RegistroDiario } from "../services/registros";
+import {
+  salvarFeedbackPaciente,
+  buscarPacientePorEmail,
+} from "../services/pacientes";
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -28,31 +32,57 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
 
   const [registros, setRegistros] = useState<RegistroDiario[]>([]);
   const [avaliacao, setAvaliacao] = useState("");
-  const [registroSelecionado, setRegistroSelecionado] =
-    useState<RegistroDiario | null>(null);
+  const [ultimoFeedback, setUltimoFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await listarRegistros(emailPaciente);
+        const [data, pacienteInfo] = await Promise.all([
+          listarRegistros(emailPaciente),
+          buscarPacientePorEmail(emailPaciente),
+        ]);
+
         setRegistros(data);
+        setUltimoFeedback(pacienteInfo.observacao ?? null);
+        setAvaliacao(""); 
       } catch (e) {
-        console.log("[MINDLY][PSI DETAILS] erro ao carregar registros:", e);
+        console.log(
+          "[MINDLY][PSI DETAILS] erro ao carregar registros/feedback:",
+          e
+        );
       }
     }
     load();
   }, [emailPaciente]);
 
-  function handleSalvar() {
-    if (!registroSelecionado) {
-      Alert.alert("Selecione um registro", "Escolha um dia para avaliar.");
+  async function handleSalvar() {
+    if (!avaliacao.trim()) {
+      Alert.alert(
+        "Feedback vazio",
+        "Escreva uma avaliação antes de salvar."
+      );
       return;
     }
 
-    Alert.alert(
-      "Em desenvolvimento",
-      "A lógica de salvar avaliação será conectada à API na próxima etapa."
-    );
+    try {
+      const texto = avaliacao.trim();
+      await salvarFeedbackPaciente(emailPaciente, texto);
+
+     
+      setUltimoFeedback(texto);
+      setAvaliacao("");
+
+      Alert.alert(
+        "Feedback enviado",
+        "O feedback geral foi registrado para este paciente."
+      );
+    } catch (e: any) {
+      console.log("[MINDLY][PSI DETAILS] ERRO AO SALVAR FEEDBACK:", e);
+      const msg =
+        e?.message ||
+        "Não foi possível salvar o feedback agora. Tente novamente mais tarde.";
+      Alert.alert("Erro ao salvar feedback", msg);
+    }
   }
 
   function fmtData(data: string) {
@@ -67,17 +97,21 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.subtitle}>Mindly • Acompanhamento</Text>
-        <Text style={styles.title}>{nome}</Text>
-        <Text style={styles.description}>
-          Visualize o diário emocional do paciente e registre suas observações
-          clínicas.
-        </Text>
-
         <FlatList
           data={registros}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          ListHeaderComponent={
+            <>
+              <Text style={styles.subtitle}>Mindly • Acompanhamento</Text>
+              <Text style={styles.title}>{nome}</Text>
+              <Text style={styles.description}>
+                Visualize o diário emocional do paciente e registre suas
+                observações clínicas gerais.
+              </Text>
+            </>
+          }
           ListEmptyComponent={
             <Text
               style={{
@@ -89,66 +123,67 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
               Nenhum registro encontrado para este paciente.
             </Text>
           }
-          renderItem={({ item }) => {
-            const isSelected = registroSelecionado?.id === item.id;
-            return (
-              <TouchableOpacity
-                style={[
-                  styles.card,
-                  isSelected && { borderColor: PRIMARY, borderWidth: 1 },
-                ]}
-                onPress={() => {
-                  setRegistroSelecionado(item);
-                  setAvaliacao(item.avaliacaoPsicologo ?? "");
-                }}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardDate}>
-                    {fmtData(item.dataRegistro)}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardDate}>
+                  {fmtData(item.dataRegistro)}
+                </Text>
+                <Text style={styles.cardMood}>{item.moodDoDia}</Text>
+              </View>
+
+              <Text style={styles.cardResumo}>{item.descricaoDia}</Text>
+
+              <Text style={styles.indicatorText}>
+                Estresse: {item.nivelEstresse}/5
+              </Text>
+              <Text style={styles.indicatorText}>
+                Sono: {item.qualidadeSono}/5
+              </Text>
+              <Text style={styles.indicatorText}>
+                Atividade Física: {item.atividadeFisica ? "Sim" : "Não"}
+              </Text>
+
+              {item.motivoGratidao && (
+                <Text style={styles.gratitude}>✨ {item.motivoGratidao}</Text>
+              )}
+            </View>
+          )}
+          ListFooterComponent={
+            <View style={styles.feedbackBox}>
+              {ultimoFeedback && (
+                <View style={styles.lastFeedbackBox}>
+                  <Text style={styles.lastFeedbackTitle}>
+                    Último feedback enviado
                   </Text>
-                  <Text style={styles.cardMood}>{item.moodDoDia}</Text>
+                  <Text style={styles.lastFeedbackText}>
+                    {ultimoFeedback}
+                  </Text>
                 </View>
+              )}
 
-                <Text style={styles.cardResumo}>{item.descricaoDia}</Text>
+              <Text style={styles.feedbackTitle}>
+                Nova avaliação / feedback geral
+              </Text>
+              <Text style={styles.feedbackHint}>
+                Escreva aqui uma análise global do paciente, com base em todos
+                os registros visualizados acima.
+              </Text>
 
-                <Text style={styles.indicatorText}>
-                  Estresse: {item.nivelEstresse}/5
-                </Text>
-                <Text style={styles.indicatorText}>
-                  Sono: {item.qualidadeSono}/5
-                </Text>
-                <Text style={styles.indicatorText}>
-                  Atividade Física: {item.atividadeFisica ? "Sim" : "Não"}
-                </Text>
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Escreva sua avaliação aqui..."
+                multiline
+                value={avaliacao}
+                onChangeText={setAvaliacao}
+              />
 
-                {item.motivoGratidao && (
-                  <Text style={styles.gratitude}>✨ {item.motivoGratidao}</Text>
-                )}
+              <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
+                <Text style={styles.saveButtonText}>Salvar avaliação</Text>
               </TouchableOpacity>
-            );
-          }}
+            </View>
+          }
         />
-
-        {/* Área de avaliação */}
-        <View style={styles.feedbackBox}>
-          <Text style={styles.feedbackTitle}>Avaliação / feedback</Text>
-          <Text style={styles.feedbackHint}>
-            Selecione um dia na lista acima e escreva sua análise clínica,
-            orientações ou observações.
-          </Text>
-
-          <TextInput
-            style={styles.feedbackInput}
-            placeholder="Escreva sua avaliação aqui..."
-            multiline
-            value={avaliacao}
-            onChangeText={setAvaliacao}
-          />
-
-          <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
-            <Text style={styles.saveButtonText}>Salvar avaliação</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <NavBarPsychologist
@@ -231,6 +266,25 @@ const styles = StyleSheet.create({
   feedbackBox: {
     marginTop: 8,
     marginBottom: 16,
+  },
+  lastFeedbackBox: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#F3F8F7",
+    borderWidth: 1,
+    borderColor: "#D7E7E3",
+    marginBottom: 10,
+  },
+  lastFeedbackTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2B3A38",
+    marginBottom: 4,
+  },
+  lastFeedbackText: {
+    fontSize: 13,
+    color: "#4A5A57",
+    lineHeight: 19,
   },
   feedbackTitle: {
     fontSize: 15,

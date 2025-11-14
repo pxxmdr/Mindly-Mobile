@@ -85,7 +85,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      {/* LOGO FIXA NO TOPO */}
+      {}
       <View style={styles.logoWrapper}>
         <Image
           source={require("../../assets/MindlyLogo.png")}

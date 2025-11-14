@@ -167,7 +167,7 @@ export default function PatientFormScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* HERO */}
+        {}
         <View style={styles.hero}>
           <View style={styles.heroBadge}>
             <Text style={styles.heroBadgeText}>Diário do paciente</Text>

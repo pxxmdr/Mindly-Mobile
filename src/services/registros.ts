@@ -23,6 +23,15 @@ export type RegistroPayload = {
   motivoGratidao?: string | null;
 };
 
+
+export type AlertaRegistro = {
+  pacienteId: number;
+  pacienteNome: string;
+  telefone: string;
+  moodDia: string;
+  descricaoDia: string;
+};
+
 export async function criarRegistro(
   data: RegistroPayload
 ): Promise<RegistroDiario> {
@@ -49,4 +58,9 @@ export async function atualizarRegistro(
 
 export async function deletarRegistro(id: number): Promise<void> {
   await api.delete(`/registros/${id}`);
+}
+
+export async function listarAlertas(): Promise<AlertaRegistro[]> {
+  const res = await api.get<AlertaRegistro[]>("/registros/alertas");
+  return res.data;
 }
