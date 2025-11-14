@@ -48,16 +48,21 @@ export default function LoginScreen() {
       const paciente = await loginPaciente({ email, senha });
       console.log("[MINDLY][LOGIN] OK ->", paciente);
 
-      // 🔵 SALVA O PACIENTE NO ASYNC STORAGE
       await AsyncStorage.setItem("pacienteLogado", JSON.stringify(paciente));
 
       const isAdmin = email.toLowerCase() === "admin@mindly.com";
-      const nextScreen = isAdmin ? "EmotionGuide" : "PatientForm";
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: nextScreen }],
-      });
+      if (isAdmin) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "PsychologistHome" }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "PatientForm" }],
+        });
+      }
     } catch (e: any) {
       console.log("[MINDLY][LOGIN] ERRO:", e);
 

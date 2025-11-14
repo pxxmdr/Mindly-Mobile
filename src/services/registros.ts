@@ -1,6 +1,5 @@
 import api from "./auth";
 
-
 export type RegistroDiario = {
   id: number;
   dataRegistro: string;
@@ -10,8 +9,8 @@ export type RegistroDiario = {
   qualidadeSono: number;
   atividadeFisica: boolean;
   motivoGratidao?: string | null;
+  avaliacaoPsicologo?: string | null;
 };
-
 
 export type RegistroPayload = {
   emailPaciente: string;
@@ -30,7 +29,6 @@ export async function criarRegistro(
   const res = await api.post<RegistroDiario>("/registros", data);
   return res.data;
 }
-
 
 export async function listarRegistros(
   emailPaciente: string

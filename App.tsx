@@ -12,6 +12,8 @@ import AnsiedadeDetailsScreen from "./src/screens/AnsiedadeDetailsScreen";
 import MedoDetailsScreen from "./src/screens/MedoDetailsScreen";
 import PatientFormScreen from "./src/screens/PatientFormScreen";
 import PatientHistoryScreen from "./src/screens/PatientHistoryScreen";
+import PsychologistHomeScreen from "./src/screens/PsychologistHomeScreen";
+import PsychologistPatientDetailsScreen from "./src/screens/PsychologistPatientDetailsScreen";
 
 export type Registro = {
   id: number;
@@ -35,6 +37,12 @@ export type RootStackParamList = {
   MedoDetails: undefined;
   PatientForm: undefined;
   PatientHistory: { newRecord?: Registro } | undefined;
+
+  PsychologistHome: undefined;
+  PsychologistPatientDetails: {
+    emailPaciente: string;
+    nome: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -67,9 +75,15 @@ export default function App() {
         <Stack.Screen name="MedoDetails" component={MedoDetailsScreen} />
 
         <Stack.Screen name="PatientForm" component={PatientFormScreen} />
+        <Stack.Screen name="PatientHistory" component={PatientHistoryScreen} />
+
         <Stack.Screen
-          name="PatientHistory"
-          component={PatientHistoryScreen}
+          name="PsychologistHome"
+          component={PsychologistHomeScreen}
+        />
+        <Stack.Screen
+          name="PsychologistPatientDetails"
+          component={PsychologistPatientDetailsScreen}
         />
       </Stack.Navigator>
     </NavigationContainer>

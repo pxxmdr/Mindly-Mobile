@@ -15,11 +15,18 @@ import NavBarPatient from "../components/NavBarPatient";
 
 const PRIMARY = "#5ED3C6";
 
+type EmotionScreenName =
+  | "FelicidadeDetails"
+  | "TristezaDetails"
+  | "RaivaDetails"
+  | "AnsiedadeDetails"
+  | "MedoDetails";
+
 type EmotionCardProps = {
   emotion: string;
   description: string;
   color: string;
-  screenName?: keyof RootStackParamList;
+  screenName?: EmotionScreenName;
 };
 
 const EmotionCard = ({
@@ -31,16 +38,15 @@ const EmotionCard = ({
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const handlePress = () => {
+  const onPress = () => {
     if (screenName) {
       navigation.navigate(screenName);
-      return;
+    } else {
+      Alert.alert(
+        emotion,
+        "Em breve você verá uma cartilha com orientações práticas sobre como lidar com essa emoção 💚"
+      );
     }
-
-    Alert.alert(
-      emotion,
-      "Em breve você verá uma cartilha com orientações práticas sobre como lidar com essa emoção 💚"
-    );
   };
 
   return (
@@ -49,7 +55,7 @@ const EmotionCard = ({
       <Text style={styles.cardDescription}>{description}</Text>
       <TouchableOpacity
         style={[styles.button, { backgroundColor: color }]}
-        onPress={handlePress}
+        onPress={onPress}
         activeOpacity={0.85}
       >
         <Text style={styles.buttonText}>Como lidar</Text>
