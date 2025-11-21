@@ -122,7 +122,6 @@ const styles = StyleSheet.create({
 
     borderWidth: 1,
     borderColor: "#E7EFF1",
-    // sombra leve
     ...Platform.select({
       ios: {
         shadowColor: "#000",

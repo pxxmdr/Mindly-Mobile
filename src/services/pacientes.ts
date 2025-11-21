@@ -1,38 +1,56 @@
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: "http://10.0.2.2:8080/api",
-});
+import api, { getAuthHeaders } from "./auth";
 
 export type Paciente = {
   id: number;
   nome: string;
   email: string;
   telefone: string;
-  observacao: string | null; 
+  observacao: string | null;
+};
+
+type PagePacientes = {
+  content: Paciente[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
 };
 
 export async function listarPacientes(): Promise<Paciente[]> {
-  const resp = await api.get<Paciente[]>("/pacientes");
-  return resp.data;
-}
+  const headers = await getAuthHeaders();
 
+  const resp = await api.get<PagePacientes>("/pacientes", {
+    headers,
+    params: {
+      page: 0,
+      size: 50,
+      sort: "nome,asc",
+    },
+  });
+
+  return resp.data.content ?? [];
+}
 
 export async function buscarPacientePorEmail(
   email: string
 ): Promise<Paciente> {
-  const resp = await api.get<Paciente>(`/pacientes/email/${email}`);
+  const headers = await getAuthHeaders();
+  const resp = await api.get<Paciente>(`/pacientes/email/${email}`, {
+    headers,
+  });
   return resp.data;
 }
-
 
 export async function salvarFeedbackPaciente(
   email: string,
   feedback: string
 ): Promise<Paciente> {
-  const resp = await api.put<Paciente>(`/pacientes/email/${email}/feedback`, {
-    feedback,
-  });
+  const headers = await getAuthHeaders();
+  const resp = await api.put<Paciente>(
+    `/pacientes/email/${email}/feedback`,
+    { feedback },
+    { headers }
+  );
   return resp.data;
 }
 

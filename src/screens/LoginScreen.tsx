@@ -45,24 +45,27 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const paciente = await loginPaciente({ email, senha });
-      console.log("[MINDLY][LOGIN] OK ->", paciente);
 
-      await AsyncStorage.setItem("pacienteLogado", JSON.stringify(paciente));
+      const usuario = await loginPaciente({ email, senha });
+console.log("[MINDLY][LOGIN] OK ->", usuario);
 
-      const isAdmin = email.toLowerCase() === "admin@mindly.com";
+const isPsicologo =
+  usuario.tipoUsuario === "PSICOLOGO" ||
+  email.toLowerCase() === "admin@mindly.com";
 
-      if (isAdmin) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "PsychologistHome" }],
-        });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "PatientForm" }],
-        });
-      }
+if (isPsicologo) {
+  navigation.reset({
+    index: 0,
+    routes: [{ name: "PsychologistHome" }],
+  });
+} else {
+  navigation.reset({
+    index: 0,
+    routes: [{ name: "PatientForm" }],
+  });
+}
+
+
     } catch (e: any) {
       console.log("[MINDLY][LOGIN] ERRO:", e);
 

@@ -61,12 +61,17 @@ export default function PatientHistoryScreen({ navigation }: any) {
       setLoading(true);
       console.log("[MINDLY][HISTORY] Buscando registros para:", email);
 
-      const [lista, pacienteInfo] = await Promise.all([
+      const [page, pacienteInfo] = await Promise.all([
         listarRegistros(email),
         buscarPacientePorEmail(email),
       ]);
 
-      console.log("[MINDLY][HISTORY] Registros retornados:", lista.length);
+      const lista = Array.isArray(page?.content) ? page.content : [];
+
+      console.log(
+        "[MINDLY][HISTORY] Registros retornados (qtd):",
+        lista.length
+      );
       setRecords(lista);
       setFeedbackPsicologo(pacienteInfo.observacao ?? null);
     } catch (e: any) {
@@ -75,6 +80,7 @@ export default function PatientHistoryScreen({ navigation }: any) {
         e?.message ||
         "Não foi possível carregar os registros. Tente novamente mais tarde.";
       Alert.alert("Erro ao carregar histórico", msg);
+      setRecords([]);
     } finally {
       setLoading(false);
     }
@@ -223,7 +229,6 @@ export default function PatientHistoryScreen({ navigation }: any) {
             );
           })}
 
-        {}
         {!loading && records.length > 0 && (
           <TouchableOpacity
             style={[styles.addButton, { marginTop: 14 }]}
@@ -234,7 +239,6 @@ export default function PatientHistoryScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {}
         {feedbackPsicologo && (
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackTitle}>Feedback do psicólogo</Text>
@@ -392,7 +396,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.3,
   },
-
   feedbackBox: {
     marginTop: 18,
     backgroundColor: "#F7F9FA",

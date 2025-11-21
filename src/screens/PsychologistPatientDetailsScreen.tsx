@@ -13,7 +13,11 @@ import NavBarPsychologist from "../components/NavBarPsychologist";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 
-import { listarRegistros, type RegistroDiario } from "../services/registros";
+import {
+  listarRegistros,
+  type RegistroDiario,
+  type PageRegistros,
+} from "../services/registros";
 import {
   salvarFeedbackPaciente,
   buscarPacientePorEmail,
@@ -37,19 +41,30 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
   useEffect(() => {
     async function load() {
       try {
-        const [data, pacienteInfo] = await Promise.all([
-          listarRegistros(emailPaciente),
+        const [page, pacienteInfo] = await Promise.all([
+          listarRegistros(emailPaciente), 
           buscarPacientePorEmail(emailPaciente),
         ]);
 
-        setRegistros(data);
+        const lista =
+          page && Array.isArray((page as PageRegistros).content)
+            ? (page as PageRegistros).content
+            : [];
+
+        console.log(
+          "[MINDLY][PSI DETAILS] registros carregados:",
+          lista.length
+        );
+
+        setRegistros(lista);
         setUltimoFeedback(pacienteInfo.observacao ?? null);
-        setAvaliacao(""); 
+        setAvaliacao("");
       } catch (e) {
         console.log(
           "[MINDLY][PSI DETAILS] erro ao carregar registros/feedback:",
           e
         );
+        setRegistros([]);
       }
     }
     load();
@@ -57,10 +72,7 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
 
   async function handleSalvar() {
     if (!avaliacao.trim()) {
-      Alert.alert(
-        "Feedback vazio",
-        "Escreva uma avaliação antes de salvar."
-      );
+      Alert.alert("Feedback vazio", "Escreva uma avaliação antes de salvar.");
       return;
     }
 
@@ -68,7 +80,6 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
       const texto = avaliacao.trim();
       await salvarFeedbackPaciente(emailPaciente, texto);
 
-     
       setUltimoFeedback(texto);
       setAvaliacao("");
 
@@ -126,9 +137,7 @@ export default function PsychologistPatientDetailsScreen({ route }: Props) {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardDate}>
-                  {fmtData(item.dataRegistro)}
-                </Text>
+                <Text style={styles.cardDate}>{fmtData(item.dataRegistro)}</Text>
                 <Text style={styles.cardMood}>{item.moodDoDia}</Text>
               </View>
 

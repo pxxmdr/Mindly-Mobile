@@ -1,17 +1,10 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const api = axios.create({
   baseURL: "http://10.0.2.2:8080/api",
   timeout: 10000,
 });
-
-export type Paciente = {
-  id: number;
-  nome: string;
-  email: string;
-  telefone: string;
-  observacao?: string | null;
-};
 
 export type RegisterPayload = {
   nome: string;
@@ -25,12 +18,23 @@ export type LoginPayload = {
   senha: string;
 };
 
+export type LoginResponse = {
+  nome: string;
+  email: string;
+  tipoUsuario: "PACIENTE" | "PSICOLOGO" | string;
+  token: string;
+};
 
 export async function registerPaciente(
   data: RegisterPayload
-): Promise<Paciente> {
+): Promise<LoginResponse> {
   try {
-    const res = await api.post<Paciente>("/auth/register", data);
+    const res = await api.post<LoginResponse>("/auth/register", data);
+
+    await AsyncStorage.setItem("mindly_token", res.data.token);
+    await AsyncStorage.setItem("mindly_email", res.data.email);
+    await AsyncStorage.setItem("pacienteLogado", JSON.stringify(res.data));
+
     return res.data;
   } catch (err: any) {
     const msg =
@@ -41,9 +45,16 @@ export async function registerPaciente(
   }
 }
 
-export async function loginPaciente(data: LoginPayload): Promise<Paciente> {
+export async function loginPaciente(
+  data: LoginPayload
+): Promise<LoginResponse> {
   try {
-    const res = await api.post<Paciente>("/auth/login", data);
+    const res = await api.post<LoginResponse>("/auth/login", data);
+
+    await AsyncStorage.setItem("mindly_token", res.data.token);
+    await AsyncStorage.setItem("mindly_email", res.data.email);
+    await AsyncStorage.setItem("pacienteLogado", JSON.stringify(res.data));
+
     return res.data;
   } catch (err: any) {
     const msg =
@@ -52,6 +63,14 @@ export async function loginPaciente(data: LoginPayload): Promise<Paciente> {
       "Credenciais inválidas.";
     throw new Error(msg);
   }
+}
+
+export async function getAuthHeaders() {
+  const token = await AsyncStorage.getItem("mindly_token");
+  if (!token) return {};
+  return {
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 export default api;
