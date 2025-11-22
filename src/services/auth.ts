@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const api = axios.create({
-  baseURL: "http://10.0.2.2:8080/api",
+  baseURL: "https://mindly-api.onrender.com", 
   timeout: 10000,
 });
 
@@ -29,7 +29,7 @@ export async function registerPaciente(
   data: RegisterPayload
 ): Promise<LoginResponse> {
   try {
-    const res = await api.post<LoginResponse>("/auth/register", data);
+    const res = await api.post<LoginResponse>("/api/auth/register", data);
 
     await AsyncStorage.setItem("mindly_token", res.data.token);
     await AsyncStorage.setItem("mindly_email", res.data.email);
@@ -37,6 +37,9 @@ export async function registerPaciente(
 
     return res.data;
   } catch (err: any) {
+    console.log("[AUTH][REGISTER][ERRO] =", err?.response?.status);
+    console.log("[AUTH][REGISTER][ERRO DATA] =", err?.response?.data);
+
     const msg =
       err?.response?.data?.message ||
       err?.response?.data ||
@@ -49,7 +52,7 @@ export async function loginPaciente(
   data: LoginPayload
 ): Promise<LoginResponse> {
   try {
-    const res = await api.post<LoginResponse>("/auth/login", data);
+    const res = await api.post<LoginResponse>("/api/auth/login", data);
 
     await AsyncStorage.setItem("mindly_token", res.data.token);
     await AsyncStorage.setItem("mindly_email", res.data.email);
@@ -57,6 +60,9 @@ export async function loginPaciente(
 
     return res.data;
   } catch (err: any) {
+    console.log("[AUTH][LOGIN][ERRO] =", err?.response?.status);
+    console.log("[AUTH][LOGIN][ERRO DATA] =", err?.response?.data);
+
     const msg =
       err?.response?.data?.message ||
       err?.response?.data ||

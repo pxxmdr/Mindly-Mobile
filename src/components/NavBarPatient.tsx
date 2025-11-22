@@ -15,8 +15,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 const PRIMARY = "#5ED3C6";
-
-type NavKey = "form" | "history" | "guide" | "logout";
+type NavKey = "form" | "history" | "guide" | "iaChat" | "logout";
 
 type Props = {
   active?: NavKey;
@@ -37,6 +36,9 @@ export default function NavBarPatient({ active }: Props) {
       case "guide":
         navigation.navigate("EmotionGuide");
         break;
+      case "iaChat":
+        navigation.navigate("PatientIaChat");
+        break;
       case "logout":
         navigation.reset({ index: 0, routes: [{ name: "Login" }] });
         break;
@@ -48,6 +50,7 @@ export default function NavBarPatient({ active }: Props) {
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <View style={styles.container}>
+        {}
         <TouchableOpacity
           style={styles.item}
           onPress={() => go("form")}
@@ -58,6 +61,7 @@ export default function NavBarPatient({ active }: Props) {
           <Text style={[styles.label, { color: tint("form") }]}>Form</Text>
         </TouchableOpacity>
 
+        {}
         <TouchableOpacity
           style={styles.item}
           onPress={() => go("history")}
@@ -74,6 +78,7 @@ export default function NavBarPatient({ active }: Props) {
           </Text>
         </TouchableOpacity>
 
+        {}
         <TouchableOpacity
           style={styles.item}
           onPress={() => go("guide")}
@@ -88,6 +93,19 @@ export default function NavBarPatient({ active }: Props) {
           <Text style={[styles.label, { color: tint("guide") }]}>Guia</Text>
         </TouchableOpacity>
 
+        {}
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => go("iaChat")}
+          activeOpacity={0.8}
+          hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+        >
+          {}
+          <AntDesign name="message" size={24} color={tint("iaChat")} />
+          <Text style={[styles.label, { color: tint("iaChat") }]}>IA</Text>
+        </TouchableOpacity>
+
+        {}
         <TouchableOpacity
           style={styles.item}
           onPress={() => go("logout")}

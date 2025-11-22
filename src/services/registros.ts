@@ -7,7 +7,7 @@ export type RegistroDiario = {
   moodDoDia: string;
   nivelEstresse: number;
   qualidadeSono: number;
-  atividadeFisica: boolean; 
+  atividadeFisica: boolean;
   motivoGratidao?: string | null;
   avaliacaoPsicologo?: string | null;
 };
@@ -19,7 +19,7 @@ export type RegistroPayload = {
   moodDoDia: string;
   nivelEstresse: number;
   qualidadeSono: number;
-  atividadeFisica: boolean; 
+  atividadeFisica: boolean;
   motivoGratidao?: string | null;
 };
 
@@ -38,7 +38,7 @@ type RegistroBackend = {
   moodDoDia: string;
   nivelEstresse: number;
   qualidadeSono: number;
-  atividadeFisica?: string | null; 
+  atividadeFisica?: string | null;
   motivoGratidao?: string | null;
   avaliacaoPsicologo?: string | null;
 };
@@ -71,7 +71,9 @@ export async function criarRegistro(
     atividadeFisica: mapAtividadeToString(data.atividadeFisica),
   };
 
-  const res = await api.post<RegistroBackend>("/registros", body, { headers });
+  const res = await api.post<RegistroBackend>("/api/registros", body, {
+    headers,
+  });
 
   const r = res.data;
   return {
@@ -98,7 +100,7 @@ export async function listarRegistros(
     totalPages: number;
     number: number;
     size: number;
-  }>(`/registros/paciente/${encodeURIComponent(emailPaciente)}`, {
+  }>(`/api/registros/paciente/${encodeURIComponent(emailPaciente)}`, {
     headers,
     params: {
       page: 0,
@@ -141,7 +143,7 @@ export async function atualizarRegistro(
     body.atividadeFisica = mapAtividadeToString(data.atividadeFisica);
   }
 
-  const res = await api.put<RegistroBackend>(`/registros/${id}`, body, {
+  const res = await api.put<RegistroBackend>(`/api/registros/${id}`, body, {
     headers,
   });
 
@@ -161,13 +163,16 @@ export async function atualizarRegistro(
 
 export async function deletarRegistro(id: number): Promise<void> {
   const headers = await getAuthHeaders();
-  await api.delete(`/registros/${id}`, { headers });
+
+  await api.delete(`/api/registros/${id}`, { headers });
 }
 
 export async function listarAlertas(): Promise<AlertaRegistro[]> {
   const headers = await getAuthHeaders();
-  const res = await api.get<AlertaRegistro[]>("/registros/alertas", {
+
+  const res = await api.get<AlertaRegistro[]>("/api/registros/alertas", {
     headers,
   });
+
   return res.data;
 }

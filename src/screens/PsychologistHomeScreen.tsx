@@ -13,15 +13,8 @@ import NavBarPsychologistHome from "../components/NavBarPsychologistHome";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 
-import {
-  listarPacientes,
-  type Paciente,
-} from "../services/pacientes";
-
-import {
-  listarAlertas,
-  type AlertaRegistro,
-} from "../services/registros";
+import { listarPacientes, type Paciente } from "../services/pacientes";
+import { listarAlertas, type AlertaRegistro } from "../services/registros";
 
 import Foundation from "@expo/vector-icons/Foundation";
 
@@ -51,7 +44,10 @@ export default function PsychologistHomeScreen({ navigation }: Props) {
         });
         setMapAlertas(map);
       } catch (e) {
-        console.error("[MINDLY][PSI HOME] erro ao listar pacientes/alertas:", e);
+        console.error(
+          "[MINDLY][PSI HOME] erro ao listar pacientes/alertas:",
+          e
+        );
       } finally {
         setLoading(false);
       }
@@ -101,7 +97,6 @@ export default function PsychologistHomeScreen({ navigation }: Props) {
                   style={styles.card}
                   onPress={() => abrirDetalhes(item)}
                 >
-                  {}
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>
                       {item.nome.charAt(0).toUpperCase()}
@@ -114,21 +109,21 @@ export default function PsychologistHomeScreen({ navigation }: Props) {
 
                       {temAlerta && (
                         <View style={styles.alertBadge}>
-                          <Foundation
-                            name="alert"
-                            size={18}
-                            color="#E53935"
-                          />
+                          <Foundation name="alert" size={18} color="#E53935" />
                           <Text style={styles.alertText}>atenção</Text>
                         </View>
                       )}
                     </View>
 
-                    <Text style={styles.patientPhone}>📞 {item.telefone}</Text>
+                    <Text style={styles.patientPhone}>
+                      📞 {item.telefone}
+                    </Text>
 
                     <Text style={styles.patientEmail}>{item.email}</Text>
 
-                    <Text style={styles.cardHint}>Ver diário emocional →</Text>
+                    <Text style={styles.cardHint}>
+                      Ver diário emocional →
+                    </Text>
                   </View>
                 </TouchableOpacity>
               );

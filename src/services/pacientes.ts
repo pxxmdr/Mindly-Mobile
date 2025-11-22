@@ -19,7 +19,7 @@ type PagePacientes = {
 export async function listarPacientes(): Promise<Paciente[]> {
   const headers = await getAuthHeaders();
 
-  const resp = await api.get<PagePacientes>("/pacientes", {
+  const resp = await api.get<PagePacientes>("/api/pacientes", {
     headers,
     params: {
       page: 0,
@@ -35,9 +35,12 @@ export async function buscarPacientePorEmail(
   email: string
 ): Promise<Paciente> {
   const headers = await getAuthHeaders();
-  const resp = await api.get<Paciente>(`/pacientes/email/${email}`, {
-    headers,
-  });
+
+  const resp = await api.get<Paciente>(
+    `/api/pacientes/email/${encodeURIComponent(email)}`,
+    { headers }
+  );
+
   return resp.data;
 }
 
@@ -46,11 +49,14 @@ export async function salvarFeedbackPaciente(
   feedback: string
 ): Promise<Paciente> {
   const headers = await getAuthHeaders();
+
+  
   const resp = await api.put<Paciente>(
-    `/pacientes/email/${email}/feedback`,
+    `/api/pacientes/email/${encodeURIComponent(email)}/feedback`,
     { feedback },
     { headers }
   );
+
   return resp.data;
 }
 

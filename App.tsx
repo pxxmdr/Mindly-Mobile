@@ -14,6 +14,7 @@ import PatientFormScreen from "./src/screens/PatientFormScreen";
 import PatientHistoryScreen from "./src/screens/PatientHistoryScreen";
 import PsychologistHomeScreen from "./src/screens/PsychologistHomeScreen";
 import PsychologistPatientDetailsScreen from "./src/screens/PsychologistPatientDetailsScreen";
+import PatientIaChatScreen from "./src/screens/PatientIaChatScreen"; 
 
 export type Registro = {
   id: number;
@@ -43,6 +44,8 @@ export type RootStackParamList = {
     emailPaciente: string;
     nome: string;
   };
+
+  PatientIaChat: undefined; 
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -85,6 +88,9 @@ export default function App() {
           name="PsychologistPatientDetails"
           component={PsychologistPatientDetailsScreen}
         />
+
+        {}
+        <Stack.Screen name="PatientIaChat" component={PatientIaChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
